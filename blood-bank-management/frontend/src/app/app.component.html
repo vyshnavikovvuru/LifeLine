@@ -1,0 +1,822 @@
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">♥</div>
+      <div>
+        <h2>LifeLine</h2>
+        <span>Blood Bank Management</span>
+      </div>
+    </div>
+
+    <nav class="navigation">
+      <button [class.active]="activeTab === 'dashboard'"
+        (click)="setActiveTab('dashboard')">
+        ⌂ <span>Dashboard</span>
+      </button>
+
+      <button [class.active]="activeTab === 'donors'"
+        (click)="setActiveTab('donors')">
+        ♧ <span>Donors</span>
+      </button>
+
+      <button [class.active]="activeTab === 'requests'"
+        (click)="setActiveTab('requests')">
+        ▤ <span>Blood Requests</span>
+      </button>
+
+      <button [class.active]="activeTab === 'inventory'"
+        (click)="setActiveTab('inventory')">
+        ▦ <span>Blood Inventory</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-help">
+      <div class="help-icon">♡</div>
+      <h3>Need Help?</h3>
+      <p>Contact our support team for assistance.</p>
+     <button class="support-button"
+        (click)="setActiveTab('help')">
+  Contact Support <span>→</span>
+</button>
+    </div>
+
+    <div class="sidebar-footer">
+      Saving lives, one donation at a time.
+    </div>
+  </aside>
+
+  <main class="main-content">
+
+  
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">LIFELINE / {{ activeTab | uppercase }}</div>
+
+        <h1>
+          <span *ngIf="activeTab === 'dashboard'">Donate blood, save lives</span>
+          <span *ngIf="activeTab === 'donors'">Our Donors</span>
+          <span *ngIf="activeTab === 'requests'">Blood Requests</span>
+          <span *ngIf="activeTab === 'inventory'">Blood Inventory</span>
+        </h1>
+
+        <p class="subtitle">Here is your blood bank overview for today.</p>
+      </div>
+
+      <div class="topbar-right">
+        <div class="date-pill">◷ &nbsp; Blood Bank Dashboard</div>
+        <div class="admin-avatar">A</div>
+        <div class="admin-label">Administrator</div>
+      </div>
+    </header>
+
+    <div class="alert success-alert" *ngIf="successMessage">
+      ✓ {{ successMessage }}
+      <button type="button" (click)="clearMessages()">×</button>
+    </div>
+
+    <div class="alert error-alert" *ngIf="errorMessage">
+      ⚠ {{ errorMessage }}
+      <button type="button" (click)="clearMessages()">×</button>
+    </div>
+
+    <section *ngIf="activeTab === 'dashboard'">
+
+      <div class="stats-grid">
+
+        <article class="stat-card">
+          <div class="stat-icon rose">♧</div>
+          <div>
+            <p>Total Donors</p>
+            <h2>{{ totalDonors }}</h2>
+            <span>Registered donors</span>
+          </div>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-icon red">♥</div>
+          <div>
+            <p>Available Units</p>
+            <h2>{{ totalUnits }}</h2>
+            <span>Across all blood groups</span>
+          </div>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-icon purple">▤</div>
+          <div>
+            <p>Blood Requests</p>
+            <h2>{{ totalRequests }}</h2>
+            <span>Total recorded requests</span>
+          </div>
+        </article>
+
+        <article class="stat-card">
+          <div class="stat-icon orange">!</div>
+          <div>
+            <p>Low Stock Alerts</p>
+            <h2>{{ lowStockInventory.length }}</h2>
+            <span>Groups needing attention</span>
+          </div>
+        </article>
+
+      </div>
+
+      <section class="panel inventory-panel">
+        <div class="panel-heading">
+          <div>
+            <h2>♥ &nbsp; Blood Inventory</h2>
+            <p>Current stock levels by blood group</p>
+          </div>
+
+          <button class="text-button" type="button"
+            (click)="setActiveTab('inventory')">
+            View inventory →
+          </button>
+        </div>
+
+        <div class="blood-grid">
+
+          <article class="blood-card" *ngFor="let group of bloodGroups">
+            <div class="blood-card-top">
+              <span class="blood-drop">♥</span>
+              <div>
+                <h3>{{ group }}</h3>
+                <p>{{ getBloodGroupUnits(group) }} units</p>
+              </div>
+            </div>
+
+            <div class="stock-track">
+              <div class="stock-fill"
+                [class.stock-low]="getBloodGroupUnits(group) < 5"
+                [style.width.%]="getStockPercentage(group)">
+              </div>
+            </div>
+
+            <div class="stock-meta">
+              <span [class.low-label]="getBloodGroupUnits(group) < 5">
+                ● {{ getStockStatus(getBloodGroupUnits(group)) }}
+              </span>
+
+              <span>{{ getStockPercentage(group) | number:'1.0-0' }}%</span>
+            </div>
+          </article>
+
+        </div>
+      </section>
+
+      <div class="bottom-grid">
+
+        <section class="panel recent-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Recent Blood Requests</h2>
+              <p>Latest requests received</p>
+            </div>
+
+            <button class="text-button" type="button"
+              (click)="setActiveTab('requests')">
+              View all →
+            </button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Patient</th>
+                  <th>Blood Group</th>
+                  <th>Hospital</th>
+                  <th>Units</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr *ngFor="let request of requests.slice(0, 5)">
+                  <td>{{ request.patientName }}</td>
+                  <td>
+                    <span class="blood-badge">{{ request.bloodGroup }}</span>
+                  </td>
+                  <td>{{ request.hospital || '—' }}</td>
+                  <td>{{ request.units }}</td>
+                </tr>
+
+                <tr *ngIf="requests.length === 0">
+                  <td colspan="4" class="empty-state">
+                    No blood requests yet.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel activity-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Stock Overview</h2>
+              <p>Blood availability at a glance</p>
+            </div>
+          </div>
+
+          <div class="activity-item" *ngFor="let item of inventory.slice(0, 5)">
+            <div class="activity-icon">♥</div>
+
+            <div class="activity-copy">
+              <strong>{{ item.bloodGroup }} blood</strong>
+              <p>
+                {{ item.unitsAvailable ?? item.units ?? 0 }}
+                units currently available
+              </p>
+            </div>
+
+            <span class="activity-status"
+              [class.low-label]="(item.unitsAvailable ?? item.units ?? 0) < 5">
+              {{ getStockStatus(item.unitsAvailable ?? item.units ?? 0) }}
+            </span>
+          </div>
+
+          <div *ngIf="inventory.length === 0" class="empty-state">
+            Inventory information is not available yet.
+          </div>
+        </section>
+
+      </div>
+
+      <!-- LOW STOCK ALERTS -->
+      <section class="panel low-stock-panel"
+        *ngIf="lowStockInventory.length > 0">
+
+        <div class="panel-heading">
+          <div>
+            <h2>⚠ Low Stock Alerts</h2>
+            <p>These blood groups may need replenishment.</p>
+          </div>
+
+          <button class="primary-button" type="button"
+            (click)="openStockModal()">
+            + Add Stock
+          </button>
+        </div>
+
+        <div class="low-stock-list">
+          <span *ngFor="let item of lowStockInventory">
+            {{ item.bloodGroup }} —
+            {{ item.unitsAvailable ?? item.units ?? 0 }} units
+          </span>
+        </div>
+      </section>
+
+    </section>
+
+    <section *ngIf="activeTab === 'donors'" class="panel page-panel">
+
+      <div class="panel-heading">
+        <div>
+          <h2>Donor Directory</h2>
+          <p>Manage your registered blood donors.</p>
+        </div>
+
+        <button class="primary-button" type="button"
+          (click)="openDonorModal()">
+          + Register Donor
+        </button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Age</th>
+              <th>Blood Group</th>
+              <th>Phone</th>
+              <th>City</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let donor of donors">
+              <td><strong>{{ donor.name }}</strong></td>
+              <td>{{ donor.age }}</td>
+              <td>
+                <span class="blood-badge">{{ donor.bloodGroup }}</span>
+              </td>
+              <td>{{ donor.phone }}</td>
+              <td>{{ donor.city || '—' }}</td>
+              <td>
+                <button *ngIf="donor.id !== undefined"
+                  class="delete-button" type="button"
+                  (click)="deleteDonor(donor.id)">
+                  Delete
+                </button>
+              </td>
+            </tr>
+
+            <tr *ngIf="donors.length === 0">
+              <td colspan="6" class="empty-state">
+                No donors registered yet.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </section>
+
+    <section *ngIf="activeTab === 'requests'" class="panel page-panel">
+
+      <div class="panel-heading">
+        <div>
+          <h2>Blood Requests</h2>
+          <p>Review blood requests submitted to the bank.</p>
+        </div>
+
+        <button class="primary-button" type="button"
+          (click)="openRequestModal()">
+          + New Request
+        </button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>Blood Group</th>
+              <th>Hospital</th>
+              <th>Units</th>
+              <th>Contact</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let request of requests">
+              <td><strong>{{ request.patientName }}</strong></td>
+
+              <td>
+                <span class="blood-badge">{{ request.bloodGroup }}</span>
+              </td>
+
+              <td>{{ request.hospital || '—' }}</td>
+              <td>{{ request.units }}</td>
+              <td>{{ request.contactPhone || '—' }}</td>
+
+              <td>
+                <span class="status-badge"
+                  [class.status-low]="request.status === 'REJECTED'">
+                  {{ request.status || 'PENDING' }}
+                </span>
+              </td>
+
+              <td class="request-actions">
+
+                <ng-container
+                  *ngIf="request.status === 'PENDING' && request.id !== undefined">
+
+                  <button class="secondary-button" type="button"
+                    (click)="updateRequestStatus(request.id, 'APPROVED')">
+                    Approve
+                  </button>
+
+                  <button class="delete-button" type="button"
+                    (click)="updateRequestStatus(request.id, 'REJECTED')">
+                    Reject
+                  </button>
+
+                </ng-container>
+
+                <button
+                  *ngIf="request.status === 'APPROVED' && request.id !== undefined"
+                  class="primary-button" type="button"
+                  (click)="fulfillRequest(request.id)">
+                  Fulfill
+                </button>
+
+                <!-- FINAL STATES -->
+                <span *ngIf="request.status === 'FULFILLED'">
+                  Completed
+                </span>
+
+                <span *ngIf="request.status === 'REJECTED'">
+                  Closed
+                </span>
+
+              </td>
+            </tr>
+
+            <tr *ngIf="requests.length === 0">
+              <td colspan="7" class="empty-state">
+                No blood requests found.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </section>
+
+    <section *ngIf="activeTab === 'inventory'" class="panel page-panel">
+
+      <div class="panel-heading">
+        <div>
+          <h2>Blood Inventory</h2>
+          <p>Monitor and update available blood units.</p>
+        </div>
+
+        <button class="primary-button" type="button"
+          (click)="openStockModal()">
+          + Add Stock
+        </button>
+      </div>
+
+
+      <div class="blood-grid inventory-full-grid">
+
+        <article class="blood-card" *ngFor="let group of bloodGroups">
+          <div class="blood-card-top">
+            <span class="blood-drop">♥</span>
+
+            <div>
+              <h3>{{ group }}</h3>
+              <p>{{ getBloodGroupUnits(group) }} units</p>
+            </div>
+          </div>
+
+          <div class="stock-track">
+            <div class="stock-fill"
+              [class.stock-low]="getBloodGroupUnits(group) < 5"
+              [style.width.%]="getStockPercentage(group)">
+            </div>
+          </div>
+
+          <div class="stock-meta">
+            <span [class.low-label]="getBloodGroupUnits(group) < 5">
+              ● {{ getStockStatus(getBloodGroupUnits(group)) }}
+            </span>
+
+            <span>{{ getStockPercentage(group) | number:'1.0-0' }}%</span>
+          </div>
+        </article>
+
+      </div>
+
+
+      <div class="inventory-table table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Blood Group</th>
+              <th>Available Units</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let item of inventory">
+              <td>
+                <span class="blood-badge">{{ item.bloodGroup }}</span>
+              </td>
+
+              <td>{{ item.unitsAvailable ?? item.units ?? 0 }}</td>
+
+              <td>
+                <span class="status-badge"
+                  [class.status-low]="(item.unitsAvailable ?? item.units ?? 0) < 5">
+                  {{ getStockStatus(item.unitsAvailable ?? item.units ?? 0) }}
+                </span>
+              </td>
+            </tr>
+
+            <tr *ngIf="inventory.length === 0">
+              <td colspan="3" class="empty-state">
+                No inventory data available.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </section>
+    
+
+<section *ngIf="activeTab === 'help'" class="panel page-panel">
+
+  <div class="panel-heading">
+    <div>
+      <h2>Help & Support</h2>
+      <p>We're here to help you use LifeLine.</p>
+    </div>
+  </div>
+
+  <div class="support-grid">
+    <article class="stat-card">
+      <div class="stat-icon rose">☎</div>
+      <div>
+        <h3>Blood Bank Assistance</h3>
+        <p>For urgent blood requirements, contact a verified local hospital or blood bank.</p>
+      </div>
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-icon purple">✉</div>
+      <div>
+        <h3>General Queries</h3>
+        <p>Get help with donor registration, blood requests, and inventory management.</p>
+      </div>
+    </article>
+  </div>
+
+  <section class="panel">
+    <h2>Frequently Asked Questions</h2>
+
+    <h3>How do I register a donor?</h3>
+    <p>Open the Donors section and select Register Donor.</p>
+
+    <h3>How do I submit a blood request?</h3>
+    <p>Open Blood Requests, select New Request, and enter the required details.</p>
+
+    <h3>What does Pending mean?</h3>
+    <p>The request is waiting for an administrator to review it.</p>
+
+    <h3>How can I update blood stock?</h3>
+    <p>Open Blood Inventory, select Add Stock, and enter the blood group and units.</p>
+  </section>
+
+  <section class="panel">
+
+    <!-- Query form shown before submission -->
+    <div *ngIf="!isQuerySubmitted">
+      <h2>Send Us a Query</h2>
+      <p>For assistance, contact your blood bank administrator.</p>
+
+      <form (ngSubmit)="submitSupportQuery()">
+
+        <label>
+          Your Name
+          <input
+            name="supportName"
+            [(ngModel)]="supportForm.name"
+            required />
+        </label>
+
+        <label>
+          Query Category
+          <select
+            name="supportCategory"
+            [(ngModel)]="supportForm.category"
+            required>
+            <option value="Donor Registration">Donor Registration</option>
+            <option value="Blood Request">Blood Request</option>
+            <option value="Blood Inventory">Blood Inventory</option>
+            <option value="Technical Issue">Technical Issue</option>
+            <option value="Other">Other</option>
+          </select>
+        </label>
+
+        <label>
+          Your Message
+          <textarea
+            name="supportMessage"
+            [(ngModel)]="supportForm.message"
+            rows="4"
+            required></textarea>
+        </label>
+
+        <button type="submit" class="primary-button">
+          Submit Query
+        </button>
+
+      </form>
+    </div>
+
+    <div *ngIf="isQuerySubmitted" class="query-submitted">
+      <h1>Query Submitted!</h1>
+      <h3>Thank you for your submission.</h3>
+    </div>
+
+  </section>
+
+</section>
+
+  </main>
+</div>
+
+<div class="modal-backdrop" *ngIf="showDonorModal"
+  (click)="closeAllModals()">
+
+  <section class="modal-card" (click)="$event.stopPropagation()">
+
+    <div class="modal-heading">
+      <div>
+        <h2>Register New Donor</h2>
+        <p>Add a donor to your directory.</p>
+      </div>
+
+      <button class="close-button" type="button"
+        (click)="closeAllModals()">×</button>
+    </div>
+
+    <form (ngSubmit)="addDonor()">
+      <div class="form-grid">
+
+        <label>
+          Full Name
+          <input name="donorName"
+            [(ngModel)]="donorForm.name"
+            placeholder="Enter full name" required />
+        </label>
+
+        <label>
+          Age
+          <input type="number" name="donorAge"
+            [(ngModel)]="donorForm.age"
+            min="18" required />
+        </label>
+
+        <label>
+          Blood Group
+          <select name="donorBloodGroup"
+            [(ngModel)]="donorForm.bloodGroup" required>
+            <option *ngFor="let group of bloodGroups" [value]="group">
+              {{ group }}
+            </option>
+          </select>
+        </label>
+
+        <label>
+          Phone Number
+          <input type="tel" name="donorPhone"
+            [(ngModel)]="donorForm.phone"
+            placeholder="Phone number" required />
+        </label>
+
+        <label>
+          City
+          <input name="donorCity"
+            [(ngModel)]="donorForm.city"
+            placeholder="City" required />
+        </label>
+
+        <label>
+          Gender
+          <select name="donorGender" [(ngModel)]="donorForm.gender">
+            <option value="">Prefer not to say</option>
+            <option value="Female">Female</option>
+            <option value="Male">Male</option>
+            <option value="Other">Other</option>
+          </select>
+        </label>
+
+        <label class="full-width">
+          Email (optional)
+          <input type="email" name="donorEmail"
+            [(ngModel)]="donorForm.email"
+            placeholder="name@example.com" />
+        </label>
+
+        <label class="full-width">
+          Address (optional)
+          <input name="donorAddress"
+            [(ngModel)]="donorForm.address"
+            placeholder="Address" />
+        </label>
+
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="secondary-button"
+          (click)="closeAllModals()">Cancel</button>
+
+        <button type="submit" class="primary-button">
+          Register Donor
+        </button>
+      </div>
+    </form>
+
+  </section>
+</div>
+
+<div class="modal-backdrop" *ngIf="showRequestModal"
+  (click)="closeAllModals()">
+
+  <section class="modal-card" (click)="$event.stopPropagation()">
+
+    <div class="modal-heading">
+      <div>
+        <h2>New Blood Request</h2>
+        <p>Enter the patient's blood requirements.</p>
+      </div>
+
+      <button class="close-button" type="button"
+        (click)="closeAllModals()">×</button>
+    </div>
+
+    <form (ngSubmit)="addRequest()">
+      <div class="form-grid">
+
+        <label>
+          Patient Name
+          <input name="patientName"
+            [(ngModel)]="requestForm.patientName"
+            placeholder="Patient name" required />
+        </label>
+
+        <label>
+          Blood Group
+          <select name="requestBloodGroup"
+            [(ngModel)]="requestForm.bloodGroup" required>
+            <option *ngFor="let group of bloodGroups" [value]="group">
+              {{ group }}
+            </option>
+          </select>
+        </label>
+
+        <label>
+          Units Required
+          <input type="number" name="requestUnits"
+            [(ngModel)]="requestForm.units"
+            min="1" required />
+        </label>
+
+        <label>
+          Hospital Name
+          <input name="hospital"
+            [(ngModel)]="requestForm.hospital"
+            placeholder="Hospital name" required />
+        </label>
+
+        <label class="full-width">
+          Contact Phone
+          <input type="tel" name="contactPhone"
+            [(ngModel)]="requestForm.contactPhone"
+            placeholder="Contact phone" required />
+        </label>
+
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="secondary-button"
+          (click)="closeAllModals()">Cancel</button>
+
+        <button type="submit" class="primary-button">
+          Submit Request
+        </button>
+      </div>
+    </form>
+
+  </section>
+</div>
+
+<div class="modal-backdrop" *ngIf="showStockModal"
+  (click)="closeAllModals()">
+
+  <section class="modal-card" (click)="$event.stopPropagation()">
+
+    <div class="modal-heading">
+      <div>
+        <h2>Add Blood Stock</h2>
+        <p>Update available units in inventory.</p>
+      </div>
+
+      <button class="close-button" type="button"
+        (click)="closeAllModals()">×</button>
+    </div>
+
+    <form (ngSubmit)="addStock()">
+      <div class="form-grid">
+
+        <label class="full-width">
+          Blood Group
+          <select name="stockBloodGroup"
+            [(ngModel)]="stockForm.bloodGroup" required>
+            <option *ngFor="let group of bloodGroups" [value]="group">
+              {{ group }}
+            </option>
+          </select>
+        </label>
+
+        <label class="full-width">
+          Units to Add
+          <input type="number" name="stockUnits"
+            [(ngModel)]="stockForm.units"
+            min="1" required />
+        </label>
+
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="secondary-button"
+          (click)="closeAllModals()">Cancel</button>
+
+        <button type="submit" class="primary-button">
+          Update Stock
+        </button>
+      </div>
+    </form>
+
+  </section>
+</div>
